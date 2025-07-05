@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -6,76 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Friends Board</title>
   <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
-  <script type="module">
-    // Firebase SDK imports
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-    import { getFirestore, collection, addDoc, getDocs, onSnapshot, deleteDoc, doc, serverTimestamp, query, orderBy } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
-    // Your Firebase configuration
-    const firebaseConfig = {
-      apiKey: "AIzaSyD6bzW62IXEUd441ZhwDgLoMGfSXZ33OKc",
-      authDomain: "deadbeat-salesman.firebaseapp.com",
-      projectId: "deadbeat-salesman",
-      storageBucket: "deadbeat-salesman.firebasestorage.app",
-      messagingSenderId: "138313873617",
-      appId: "1:138313873617:web:53cd258bcd7bacfad7adf0",
-      measurementId: "G-MGZBH2KRBZ"
-    };
-
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
-
-    const displayName = localStorage.getItem("displayName");
-    if (!displayName) {
-      window.location.href = "index.html";
-    } else {
-      document.addEventListener("DOMContentLoaded", async () => {
-        document.getElementById("greeting").textContent = `Welcome, ${displayName}!`;
-
-        const topicsRef = collection(db, "topics");
-        const q = query(topicsRef, orderBy("timestamp", "desc"));
-        const newTopicInput = document.getElementById("newTopic");
-        const postTopicBtn = document.getElementById("postTopicBtn");
-        const topicsContainer = document.getElementById("topics");
-
-        postTopicBtn.addEventListener("click", async () => {
-          const content = newTopicInput.value.trim();
-          if (content !== "") {
-            await addDoc(topicsRef, {
-              author: displayName,
-              content,
-              timestamp: serverTimestamp()
-            });
-            newTopicInput.value = "";
-          }
-        });
-
-        onSnapshot(q, (snapshot) => {
-          topicsContainer.innerHTML = "";
-          snapshot.forEach((docSnap) => {
-            const data = docSnap.data();
-            const topicId = docSnap.id;
-            const topicDiv = document.createElement("div");
-            topicDiv.className = "bg-white p-4 rounded shadow mb-4";
-            topicDiv.innerHTML = `
-              <div class="flex justify-between">
-                <p><strong>${data.author}:</strong> ${data.content}</p>
-                ${data.author === displayName ? `<button class="text-red-500 text-sm" data-id="${topicId}">Delete</button>` : ""}
-              </div>
-            `;
-            topicsContainer.appendChild(topicDiv);
-
-            const deleteBtn = topicDiv.querySelector("button");
-            if (deleteBtn) {
-              deleteBtn.addEventListener("click", async () => {
-                await deleteDoc(doc(db, "topics", deleteBtn.dataset.id));
-              });
-            }
-          });
-        });
-      });
-    }
-  </script>
+  <!-- Firebase SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 </head>
 <body class="bg-gray-100 p-4">
   <h1 class="text-3xl font-bold mb-2">Friends Board</h1>
@@ -87,5 +20,70 @@
   </div>
 
   <div id="topics" class="space-y-4"></div>
+
+  <script>
+    // Your Firebase config
+    const firebaseConfig = {
+      apiKey: "AIzaSyD6bzW62IXEUd441ZhwDgLoMGfSXZ33OKc",
+      authDomain: "deadbeat-salesman.firebaseapp.com",
+      projectId: "deadbeat-salesman",
+      storageBucket: "deadbeat-salesman.firebasestorage.app",
+      messagingSenderId: "138313873617",
+      appId: "1:138313873617:web:53cd258bcd7bacfad7adf0",
+      measurementId: "G-MGZBH2KRBZ"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+
+    const displayName = localStorage.getItem("displayName");
+    if (!displayName) {
+      window.location.href = "index.html";
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+      document.getElementById("greeting").textContent = `Welcome, ${displayName}!`;
+
+      const topicsRef = db.collection("topics");
+      const newTopicInput = document.getElementById("newTopic");
+      const postTopicBtn = document.getElementById("postTopicBtn");
+      const topicsContainer = document.getElementById("topics");
+
+      postTopicBtn.addEventListener("click", async () => {
+        const content = newTopicInput.value.trim();
+        if (content) {
+          await topicsRef.add({
+            author: displayName,
+            content,
+            timestamp: firebase.firestore.FieldValue.serverTimestamp()
+          });
+          newTopicInput.value = "";
+        }
+      });
+
+      topicsRef.orderBy("timestamp", "desc").onSnapshot(snapshot => {
+        topicsContainer.innerHTML = "";
+        snapshot.forEach(doc => {
+          const data = doc.data();
+          const topicDiv = document.createElement("div");
+          topicDiv.className = "bg-white p-4 rounded shadow mb-4";
+          topicDiv.innerHTML = `
+            <div class="flex justify-between">
+              <p><strong>${data.author}:</strong> ${data.content}</p>
+              ${data.author === displayName ? `<button class="text-red-500 text-sm" data-id="${doc.id}">Delete</button>` : ""}
+            </div>
+          `;
+          topicsContainer.appendChild(topicDiv);
+
+          const deleteBtn = topicDiv.querySelector("button");
+          if (deleteBtn) {
+            deleteBtn.addEventListener("click", async () => {
+              await topicsRef.doc(deleteBtn.dataset.id).delete();
+            });
+          }
+        });
+      });
+    });
+  </script>
 </body>
 </html>
