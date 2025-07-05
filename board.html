@@ -7,19 +7,41 @@
   <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
 </head>
 <body class="bg-gray-100 p-4">
-  <h1 class="text-3xl font-bold mb-4">Welcome to the Friends Board</h1>
-  <p id="greeting" class="mb-4 text-lg"></p>
+  <h1 class="text-3xl font-bold mb-4">Friends Board</h1>
+  <p id="greeting" class="mb-4 text-lg text-gray-700"></p>
 
-  <textarea placeholder="Start a new topic..." class="w-full p-2 border rounded mb-2"></textarea>
-  <button class="bg-green-500 text-white px-4 py-2 rounded">Post Topic</button>
+  <div class="mb-6">
+    <textarea id="newPost" placeholder="Start a new topic..." class="w-full p-3 border rounded mb-2"></textarea>
+    <button id="postButton" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded">Post Topic</button>
+  </div>
+
+  <div id="postList" class="space-y-4"></div>
 
   <script>
+    // Display user's name
     const name = localStorage.getItem('displayName');
+    const greeting = document.getElementById('greeting');
     if (name) {
-      document.getElementById('greeting').textContent = `Hey, ${name}!`;
+      greeting.textContent = `Welcome, ${name}!`;
     } else {
-      window.location.href = 'index.html'; // redirect back if no name
+      window.location.href = 'index.html'; // bounce if no login
     }
+
+    // Post logic
+    const postList = document.getElementById('postList');
+    const postButton = document.getElementById('postButton');
+    const newPost = document.getElementById('newPost');
+
+    postButton.addEventListener('click', () => {
+      const content = newPost.value.trim();
+      if (content !== '') {
+        const div = document.createElement('div');
+        div.className = 'bg-white p-4 rounded shadow';
+        div.textContent = content;
+        postList.prepend(div);
+        newPost.value = '';
+      }
+    });
   </script>
 </body>
 </html>
