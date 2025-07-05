@@ -9,7 +9,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Friends Board v4</title>
+  <title>Friends Board v5</title>
   <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
 </head>
 <body class="bg-gray-100 p-4">
@@ -110,6 +110,87 @@ const firebaseConfig = {
 // Initialize Firebase
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
+
+postTopicBtn.addEventListener("click", async () => {
+  const content = newTopicInput.value.trim();
+  if (content) {
+    await db.collection("topics").add({
+      author: displayName,
+      content,
+      timestamp: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    newTopicInput.value = "";
+  }
+});
+
+db.collection("topics")
+  .orderBy("timestamp", "desc")
+  .onSnapshot(snapshot => {
+    topicsContainer.innerHTML = "";
+    snapshot.forEach(doc => {
+      const data = doc.data();
+      const topicDiv = document.createElement("div");
+      topicDiv.className = "bg-white p-4 rounded shadow mb-4";
+      topicDiv.innerHTML = `
+        <div class="flex justify-between items-start">
+          <div>
+            <p><strong>${data.author}:</strong> ${data.content}</p>
+            <div class="ml-4 mt-2 space-y-1" id="comments-${doc.id}"></div>
+            <input type="text" class="comment-input border p-1 rounded mt-2 w-full" placeholder="Write a comment..." />
+            <button class="post-comment bg-blue-500 text-white px-2 py-1 rounded mt-1" data-id="${doc.id}">Comment</button>
+          </div>
+          ${data.author === displayName ? `<button class="delete-topic text-red-500 text-sm" data-id="${doc.id}">Delete</button>` : ""}
+        </div>
+      `;
+      topicsContainer.appendChild(topicDiv);
+
+      // Load comments
+      const commentsContainer = topicDiv.querySelector(`#comments-${doc.id}`);
+      db.collection("topics").doc(doc.id).collection("comments").orderBy("timestamp")
+        .onSnapshot(commentSnap => {
+          commentsContainer.innerHTML = "";
+          commentSnap.forEach(commentDoc => {
+            const c = commentDoc.data();
+            const commentEl = document.createElement("p");
+            commentEl.className = "text-sm";
+            commentEl.innerHTML = `<strong>${c.author}:</strong> ${c.content}`;
+            if (c.author === displayName) {
+              const deleteBtn = document.createElement("button");
+              deleteBtn.textContent = "✕";
+              deleteBtn.className = "text-red-500 text-xs ml-2";
+              deleteBtn.onclick = () => {
+                db.collection("topics").doc(doc.id).collection("comments").doc(commentDoc.id).delete();
+              };
+              commentEl.appendChild(deleteBtn);
+            }
+            commentsContainer.appendChild(commentEl);
+          });
+        });
+
+      // Handle comment posting
+      topicDiv.querySelector(".post-comment").addEventListener("click", async e => {
+        const id = e.target.dataset.id;
+        const input = topicDiv.querySelector(".comment-input");
+        const content = input.value.trim();
+        if (content) {
+          await db.collection("topics").doc(id).collection("comments").add({
+            author: displayName,
+            content,
+            timestamp: firebase.firestore.FieldValue.serverTimestamp()
+          });
+          input.value = "";
+        }
+      });
+
+      // Handle topic delete
+      const deleteBtn = topicDiv.querySelector(".delete-topic");
+      if (deleteBtn) {
+        deleteBtn.addEventListener("click", async () => {
+          await db.collection("topics").doc(deleteBtn.dataset.id).delete();
+        });
+      }
+    });
+  });
 
 </script>
 </body>
