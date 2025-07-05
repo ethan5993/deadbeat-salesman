@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Friends Board</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-100 p-4">
+  <h1 class="text-3xl font-bold mb-2">Friends Board</h1>
+  <p id="greeting" class="mb-6 text-lg text-gray-700"></p>
+
+  <div class="mb-6">
+    <textarea id="newTopic" placeholder="Start a new topic..." class="w-full p-3 border rounded mb-2"></textarea>
+    <button id="postTopicBtn" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded">Post Topic</button>
+  </div>
+
+  <div id="topics" class="space-y-4"></div>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      const displayName = localStorage.getItem("displayName");
+      if (!displayName) {
+        window.location.href = "index.html";
+        return;
+      }
+
+      document.getElementById("greeting").textContent = `Welcome, ${displayName}!`;
+
+      const newTopicInput = document.getElementById("newTopic");
+      const postTopicBtn = document.getElementById("postTopicBtn");
+      const topicsContainer = document.getElementById("topics");
+      const topics = [];
+
+      postTopicBtn.addEventListener("click", () => {
+        const content = newTopicInput.value.trim();
+        if (content) {
+          const topic = {
+            id: Date.now().toString(),
+            author: displayName,
+            content
+          };
+          topics.unshift(topic); // add to start
+          newTopicInput.value = "";
+          renderTopics();
+        }
+      });
+
+      function renderTopics() {
+        topicsContainer.innerHTML = "";
+        topics.forEach(topic => {
+          const div = document.createElement("div");
+          div.className = "bg-white p-4 rounded shadow mb-4";
+          div.innerHTML = `
+            <div class="flex justify-between">
+              <p><strong>${topic.author}:</strong> ${topic.content}</p>
+              ${topic.author === displayName ? `<button class="text-red-500 text-sm" data-id="${topic.id}">Delete</button>` : ""}
+            </div>
+          `;
+          const deleteBtn = div.querySelector("button");
+          if (deleteBtn) {
+            deleteBtn.addEventListener("click", () => {
+              const index = topics.findIndex(t => t.id === deleteBtn.dataset.id);
+              if (index !== -1) {
+                topics.splice(index, 1);
+                renderTopics();
+              }
+            });
+          }
+          topicsContainer.appendChild(div);
+        });
+      }
+    });
+  </script>
+</body>
+</html>
