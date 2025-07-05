@@ -22,26 +22,28 @@
   <div id="topics" class="space-y-4"></div>
 
   <script>
-    // Your Firebase config
-    const firebaseConfig = {
-      apiKey: "AIzaSyD6bzW62IXEUd441ZhwDgLoMGfSXZ33OKc",
-      authDomain: "deadbeat-salesman.firebaseapp.com",
-      projectId: "deadbeat-salesman",
-      storageBucket: "deadbeat-salesman.firebasestorage.app",
-      messagingSenderId: "138313873617",
-      appId: "1:138313873617:web:53cd258bcd7bacfad7adf0",
-      measurementId: "G-MGZBH2KRBZ"
-    };
-
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.firestore();
-
-    const displayName = localStorage.getItem("displayName");
-    if (!displayName) {
-      window.location.href = "index.html";
-    }
-
     document.addEventListener("DOMContentLoaded", () => {
+      // Firebase config
+      const firebaseConfig = {
+        apiKey: "AIzaSyD6bzW62IXEUd441ZhwDgLoMGfSXZ33OKc",
+        authDomain: "deadbeat-salesman.firebaseapp.com",
+        projectId: "deadbeat-salesman",
+        storageBucket: "deadbeat-salesman.appspot.com",
+        messagingSenderId: "138313873617",
+        appId: "1:138313873617:web:53cd258bcd7bacfad7adf0",
+        measurementId: "G-MGZBH2KRBZ"
+      };
+
+      // Initialize Firebase
+      firebase.initializeApp(firebaseConfig);
+      const db = firebase.firestore();
+
+      const displayName = localStorage.getItem("displayName");
+      if (!displayName) {
+        window.location.href = "index.html";
+        return;
+      }
+
       document.getElementById("greeting").textContent = `Welcome, ${displayName}!`;
 
       const topicsRef = db.collection("topics");
