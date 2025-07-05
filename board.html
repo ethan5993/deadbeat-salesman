@@ -1,19 +1,17 @@
 <!DOCTYPE html>
 <html lang="en">
-<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
-<meta http-equiv="Pragma" content="no-cache" />
-<meta http-equiv="Expires" content="0" />
 <head>
-<!-- Firebase SDKs -->
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Friends Board v5</title>
+  <title>Friends Board v.5</title>
   <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+
+  <!-- Firebase SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 </head>
 <body class="bg-gray-100 p-4">
-  <h1 class="text-3xl font-bold mb-2">Friends Board</h1>
+  <h1 class="text-3xl font-bold mb-2">Welcome to the Friends Board</h1>
   <p id="greeting" class="mb-6 text-lg text-gray-700"></p>
 
   <div class="mb-6">
@@ -23,175 +21,121 @@
 
   <div id="topics" class="space-y-4"></div>
 
- <script>
-  const displayName = localStorage.getItem("displayName");
-  if (!displayName) {
-    window.location.href = "index.html";
-  }
+  <script>
+    // Initialize Firebase
+    const firebaseConfig = {
+      apiKey: "AIzaSyD6bzW62IXEUd441ZhwDgLoMGfSXZ33OKc",
+      authDomain: "deadbeat-salesman.firebaseapp.com",
+      projectId: "deadbeat-salesman",
+      storageBucket: "deadbeat-salesman.appspot.com",
+      messagingSenderId: "138313873617",
+      appId: "1:138313873617:web:53cd258bcd7bacfad7adf0",
+      measurementId: "G-MGZBH2KRBZ"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
 
-  const topics = [];
+    const displayName = localStorage.getItem("displayName");
+    if (!displayName) {
+      window.location.href = "index.html";
+    }
 
-  document.addEventListener("DOMContentLoaded", () => {
     document.getElementById("greeting").textContent = `Hey, ${displayName}!`;
 
+    const topicsRef = db.collection("topics");
     const newTopicInput = document.getElementById("newTopic");
     const postTopicBtn = document.getElementById("postTopicBtn");
     const topicsContainer = document.getElementById("topics");
 
-    function renderTopics() {
-      topicsContainer.innerHTML = "";
-      topics.forEach((topic, index) => {
-        const topicDiv = document.createElement("div");
-        topicDiv.className = "bg-white p-4 rounded shadow";
-
-        topicDiv.innerHTML = `
-          <div class="mb-2">
-            <strong>${topic.author}:</strong> ${topic.content}
-            ${topic.author === displayName ? `<button class="text-red-500 text-sm float-right" onclick="deleteTopic(${index})">Delete</button>` : ""}
-          </div>
-          <div class="ml-4">
-            <div id="comments-${index}" class="space-y-1 mb-2">
-              ${topic.comments.map((c, i) => `
-                <div>
-                  <em>${c.author}:</em> ${c.text}
-                  ${c.author === displayName ? `<button class="text-red-400 text-xs ml-2" onclick="deleteComment(${index}, ${i})">x</button>` : ""}
-                </div>`).join("")}
-            </div>
-            <input type="text" class="border p-1 text-sm w-full mb-1" placeholder="Add a comment..." onkeydown="handleComment(event, ${index})">
-          </div>
-        `;
-
-        topicsContainer.appendChild(topicDiv);
-      });
-    }
-
-    window.deleteTopic = function (index) {
-      topics.splice(index, 1);
-      renderTopics();
-    };
-
-    window.deleteComment = function (topicIndex, commentIndex) {
-      topics[topicIndex].comments.splice(commentIndex, 1);
-      renderTopics();
-    };
-
-    window.handleComment = function (e, topicIndex) {
-      if (e.key === "Enter") {
-        const text = e.target.value.trim();
-        if (text) {
-          topics[topicIndex].comments.push({ author: displayName, text });
-          e.target.value = "";
-          renderTopics();
-        }
-      }
-    };
-
-    postTopicBtn.addEventListener("click", () => {
+    // Post a new topic
+    postTopicBtn.addEventListener("click", async () => {
       const content = newTopicInput.value.trim();
       if (content) {
-        topics.unshift({ author: displayName, content, comments: [] });
+        await topicsRef.add({
+          author: displayName,
+          content,
+          timestamp: firebase.firestore.FieldValue.serverTimestamp()
+        });
         newTopicInput.value = "";
-        renderTopics();
       }
     });
-  });
 
-// Firebase config
-const firebaseConfig = {
-  apiKey: "AIzaSyD6bzW62IXEUd441ZhwDgLoMGfSXZ33OKc",
-  authDomain: "deadbeat-salesman.firebaseapp.com",
-  projectId: "deadbeat-salesman",
-  storageBucket: "deadbeat-salesman.appspot.com",
-  messagingSenderId: "138313873617",
-  appId: "1:138313873617:web:53cd258bcd7bacfad7adf0",
-  measurementId: "G-MGZBH2KRBZ"
-};
+    // Listen for topics
+    topicsRef.orderBy("timestamp", "desc").onSnapshot(snapshot => {
+      topicsContainer.innerHTML = "";
+      snapshot.forEach(doc => {
+        const data = doc.data();
+        const topicId = doc.id;
 
-// Initialize Firebase
-firebase.initializeApp(firebaseConfig);
-const db = firebase.firestore();
-
-postTopicBtn.addEventListener("click", async () => {
-  const content = newTopicInput.value.trim();
-  if (content) {
-    await db.collection("topics").add({
-      author: displayName,
-      content,
-      timestamp: firebase.firestore.FieldValue.serverTimestamp()
-    });
-    newTopicInput.value = "";
-  }
-});
-
-db.collection("topics")
-  .orderBy("timestamp", "desc")
-  .onSnapshot(snapshot => {
-    topicsContainer.innerHTML = "";
-    snapshot.forEach(doc => {
-      const data = doc.data();
-      const topicDiv = document.createElement("div");
-      topicDiv.className = "bg-white p-4 rounded shadow mb-4";
-      topicDiv.innerHTML = `
-        <div class="flex justify-between items-start">
-          <div>
+        const topicDiv = document.createElement("div");
+        topicDiv.className = "bg-white p-4 rounded shadow";
+        topicDiv.innerHTML = `
+          <div class="flex justify-between">
             <p><strong>${data.author}:</strong> ${data.content}</p>
-            <div class="ml-4 mt-2 space-y-1" id="comments-${doc.id}"></div>
-            <input type="text" class="comment-input border p-1 rounded mt-2 w-full" placeholder="Write a comment..." />
-            <button class="post-comment bg-blue-500 text-white px-2 py-1 rounded mt-1" data-id="${doc.id}">Comment</button>
+            ${data.author === displayName ? `<button class="text-red-500 text-sm delete-topic" data-id="${topicId}">Delete</button>` : ""}
           </div>
-          ${data.author === displayName ? `<button class="delete-topic text-red-500 text-sm" data-id="${doc.id}">Delete</button>` : ""}
-        </div>
-      `;
-      topicsContainer.appendChild(topicDiv);
+          <div class="mt-2">
+            <textarea class="comment-input w-full p-2 border rounded mb-2" placeholder="Add a comment..."></textarea>
+            <button class="post-comment-btn bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded" data-id="${topicId}">Post Comment</button>
+            <div class="comments mt-4 space-y-2"></div>
+          </div>
+        `;
+        topicsContainer.appendChild(topicDiv);
 
-      // Load comments
-      const commentsContainer = topicDiv.querySelector(`#comments-${doc.id}`);
-      db.collection("topics").doc(doc.id).collection("comments").orderBy("timestamp")
-        .onSnapshot(commentSnap => {
+        // Post comment
+        const commentBtn = topicDiv.querySelector(".post-comment-btn");
+        commentBtn.addEventListener("click", async () => {
+          const input = topicDiv.querySelector(".comment-input");
+          const comment = input.value.trim();
+          if (comment) {
+            await topicsRef.doc(topicId).collection("comments").add({
+              author: displayName,
+              content: comment,
+              timestamp: firebase.firestore.FieldValue.serverTimestamp()
+            });
+            input.value = "";
+          }
+        });
+
+        // Delete topic
+        const deleteBtn = topicDiv.querySelector(".delete-topic");
+        if (deleteBtn) {
+          deleteBtn.addEventListener("click", async () => {
+            if (confirm("Delete this topic?")) {
+              await topicsRef.doc(topicId).delete();
+            }
+          });
+        }
+
+        // Listen for comments
+        const commentsContainer = topicDiv.querySelector(".comments");
+        topicsRef.doc(topicId).collection("comments").orderBy("timestamp").onSnapshot(commentSnap => {
           commentsContainer.innerHTML = "";
           commentSnap.forEach(commentDoc => {
-            const c = commentDoc.data();
-            const commentEl = document.createElement("p");
-            commentEl.className = "text-sm";
-            commentEl.innerHTML = `<strong>${c.author}:</strong> ${c.content}`;
-            if (c.author === displayName) {
-              const deleteBtn = document.createElement("button");
-              deleteBtn.textContent = "✕";
-              deleteBtn.className = "text-red-500 text-xs ml-2";
-              deleteBtn.onclick = () => {
-                db.collection("topics").doc(doc.id).collection("comments").doc(commentDoc.id).delete();
-              };
-              commentEl.appendChild(deleteBtn);
+            const comment = commentDoc.data();
+            const commentDiv = document.createElement("div");
+            commentDiv.className = "bg-gray-100 p-2 rounded";
+            commentDiv.innerHTML = `
+              <div class="flex justify-between">
+                <p><strong>${comment.author}:</strong> ${comment.content}</p>
+                ${comment.author === displayName ? `<button class="text-red-400 text-xs delete-comment" data-topic="${topicId}" data-id="${commentDoc.id}">Delete</button>` : ""}
+              </div>
+            `;
+            commentsContainer.appendChild(commentDiv);
+
+            // Delete comment
+            const deleteCommentBtn = commentDiv.querySelector(".delete-comment");
+            if (deleteCommentBtn) {
+              deleteCommentBtn.addEventListener("click", async () => {
+                if (confirm("Delete this comment?")) {
+                  await topicsRef.doc(topicId).collection("comments").doc(deleteCommentBtn.dataset.id).delete();
+                }
+              });
             }
-            commentsContainer.appendChild(commentEl);
           });
         });
-
-      // Handle comment posting
-      topicDiv.querySelector(".post-comment").addEventListener("click", async e => {
-        const id = e.target.dataset.id;
-        const input = topicDiv.querySelector(".comment-input");
-        const content = input.value.trim();
-        if (content) {
-          await db.collection("topics").doc(id).collection("comments").add({
-            author: displayName,
-            content,
-            timestamp: firebase.firestore.FieldValue.serverTimestamp()
-          });
-          input.value = "";
-        }
       });
-
-      // Handle topic delete
-      const deleteBtn = topicDiv.querySelector(".delete-topic");
-      if (deleteBtn) {
-        deleteBtn.addEventListener("click", async () => {
-          await db.collection("topics").doc(deleteBtn.dataset.id).delete();
-        });
-      }
     });
-  });
-
-</script>
+  </script>
 </body>
 </html>
