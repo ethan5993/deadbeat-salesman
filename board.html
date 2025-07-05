@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -7,39 +8,82 @@
   <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
 </head>
 <body class="bg-gray-100 p-4">
-  <h1 class="text-3xl font-bold mb-4">Friends Board</h1>
-  <p id="greeting" class="mb-4 text-lg text-gray-700"></p>
+  <h1 class="text-3xl font-bold mb-2">Friends Board</h1>
+  <p id="greeting" class="mb-6 text-lg text-gray-700"></p>
 
   <div class="mb-6">
-    <textarea id="newPost" placeholder="Start a new topic..." class="w-full p-3 border rounded mb-2"></textarea>
-    <button id="postButton" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded">Post Topic</button>
+    <textarea id="newTopic" placeholder="Start a new topic..." class="w-full p-3 border rounded mb-2"></textarea>
+    <button id="postTopicBtn" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded">Post Topic</button>
   </div>
 
-  <div id="postList" class="space-y-4"></div>
+  <div id="topics" class="space-y-4"></div>
 
   <script>
-    // Display user's name
-    const name = localStorage.getItem('displayName');
-    const greeting = document.getElementById('greeting');
-    if (name) {
-      greeting.textContent = `Welcome, ${name}!`;
+    const displayName = localStorage.getItem('displayName');
+    if (!displayName) {
+      window.location.href = 'index.html';
     } else {
-      window.location.href = 'index.html'; // bounce if no login
+      document.getElementById('greeting').textContent = `Welcome, ${displayName}!`;
     }
 
-    // Post logic
-    const postList = document.getElementById('postList');
-    const postButton = document.getElementById('postButton');
-    const newPost = document.getElementById('newPost');
+    const topicsContainer = document.getElementById('topics');
+    const newTopicInput = document.getElementById('newTopic');
+    const postTopicBtn = document.getElementById('postTopicBtn');
 
-    postButton.addEventListener('click', () => {
-      const content = newPost.value.trim();
-      if (content !== '') {
-        const div = document.createElement('div');
-        div.className = 'bg-white p-4 rounded shadow';
-        div.textContent = content;
-        postList.prepend(div);
-        newPost.value = '';
+    function createCommentBox(topicDiv, topicAuthor) {
+      const commentInput = document.createElement('input');
+      commentInput.className = 'w-full p-2 border rounded mb-2 mt-2';
+      commentInput.placeholder = 'Write a comment...';
+
+      const commentBtn = document.createElement('button');
+      commentBtn.className = 'bg-blue-500 text-white px-3 py-1 rounded ml-2';
+      commentBtn.textContent = 'Comment';
+
+      topicDiv.appendChild(commentInput);
+      topicDiv.appendChild(commentBtn);
+
+      commentBtn.addEventListener('click', () => {
+        const commentText = commentInput.value.trim();
+        if (commentText) {
+          const comment = document.createElement('div');
+          comment.className = 'bg-gray-100 p-2 rounded mt-2 flex justify-between items-center';
+          comment.innerHTML = `<span><strong>${displayName}:</strong> ${commentText}</span>`;
+
+          if (displayName === topicAuthor) {
+            const deleteBtn = document.createElement('button');
+            deleteBtn.textContent = 'Delete';
+            deleteBtn.className = 'text-red-500 ml-4 text-sm';
+            deleteBtn.onclick = () => comment.remove();
+            comment.appendChild(deleteBtn);
+          }
+
+          topicDiv.appendChild(comment);
+          commentInput.value = '';
+        }
+      });
+    }
+
+    postTopicBtn.addEventListener('click', () => {
+      const topicText = newTopicInput.value.trim();
+      if (topicText) {
+        const topicDiv = document.createElement('div');
+        topicDiv.className = 'bg-white p-4 rounded shadow';
+
+        const contentDiv = document.createElement('div');
+        contentDiv.innerHTML = `<strong>${displayName}:</strong> ${topicText}`;
+        topicDiv.appendChild(contentDiv);
+
+        if (true) {
+          const deleteBtn = document.createElement('button');
+          deleteBtn.textContent = 'Delete Topic';
+          deleteBtn.className = 'text-red-500 text-sm ml-4';
+          deleteBtn.onclick = () => topicDiv.remove();
+          topicDiv.appendChild(deleteBtn);
+        }
+
+        topicsContainer.prepend(topicDiv);
+        createCommentBox(topicDiv, displayName);
+        newTopicInput.value = '';
       }
     });
   </script>
