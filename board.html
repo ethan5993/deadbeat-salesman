@@ -20,60 +20,78 @@
 
   <div id="topics" class="space-y-4"></div>
 
-  <script>
-    document.addEventListener("DOMContentLoaded", () => {
-      const displayName = localStorage.getItem("displayName");
-      if (!displayName) {
-        window.location.href = "index.html";
-        return;
-      }
+ <script>
+  const displayName = localStorage.getItem("displayName");
+  if (!displayName) {
+    window.location.href = "index.html";
+  }
 
-      document.getElementById("greeting").textContent = `Welcome, ${displayName}!`;
+  const topics = [];
 
-      const newTopicInput = document.getElementById("newTopic");
-      const postTopicBtn = document.getElementById("postTopicBtn");
-      const topicsContainer = document.getElementById("topics");
-      const topics = [];
+  document.addEventListener("DOMContentLoaded", () => {
+    document.getElementById("greeting").textContent = `Hey, ${displayName}!`;
 
-      postTopicBtn.addEventListener("click", () => {
-        const content = newTopicInput.value.trim();
-        if (content) {
-          const topic = {
-            id: Date.now().toString(),
-            author: displayName,
-            content
-          };
-          topics.unshift(topic); // add to start
-          newTopicInput.value = "";
+    const newTopicInput = document.getElementById("newTopic");
+    const postTopicBtn = document.getElementById("postTopicBtn");
+    const topicsContainer = document.getElementById("topics");
+
+    function renderTopics() {
+      topicsContainer.innerHTML = "";
+      topics.forEach((topic, index) => {
+        const topicDiv = document.createElement("div");
+        topicDiv.className = "bg-white p-4 rounded shadow";
+
+        topicDiv.innerHTML = `
+          <div class="mb-2">
+            <strong>${topic.author}:</strong> ${topic.content}
+            ${topic.author === displayName ? `<button class="text-red-500 text-sm float-right" onclick="deleteTopic(${index})">Delete</button>` : ""}
+          </div>
+          <div class="ml-4">
+            <div id="comments-${index}" class="space-y-1 mb-2">
+              ${topic.comments.map((c, i) => `
+                <div>
+                  <em>${c.author}:</em> ${c.text}
+                  ${c.author === displayName ? `<button class="text-red-400 text-xs ml-2" onclick="deleteComment(${index}, ${i})">x</button>` : ""}
+                </div>`).join("")}
+            </div>
+            <input type="text" class="border p-1 text-sm w-full mb-1" placeholder="Add a comment..." onkeydown="handleComment(event, ${index})">
+          </div>
+        `;
+
+        topicsContainer.appendChild(topicDiv);
+      });
+    }
+
+    window.deleteTopic = function (index) {
+      topics.splice(index, 1);
+      renderTopics();
+    };
+
+    window.deleteComment = function (topicIndex, commentIndex) {
+      topics[topicIndex].comments.splice(commentIndex, 1);
+      renderTopics();
+    };
+
+    window.handleComment = function (e, topicIndex) {
+      if (e.key === "Enter") {
+        const text = e.target.value.trim();
+        if (text) {
+          topics[topicIndex].comments.push({ author: displayName, text });
+          e.target.value = "";
           renderTopics();
         }
-      });
+      }
+    };
 
-      function renderTopics() {
-        topicsContainer.innerHTML = "";
-        topics.forEach(topic => {
-          const div = document.createElement("div");
-          div.className = "bg-white p-4 rounded shadow mb-4";
-          div.innerHTML = `
-            <div class="flex justify-between">
-              <p><strong>${topic.author}:</strong> ${topic.content}</p>
-              ${topic.author === displayName ? `<button class="text-red-500 text-sm" data-id="${topic.id}">Delete</button>` : ""}
-            </div>
-          `;
-          const deleteBtn = div.querySelector("button");
-          if (deleteBtn) {
-            deleteBtn.addEventListener("click", () => {
-              const index = topics.findIndex(t => t.id === deleteBtn.dataset.id);
-              if (index !== -1) {
-                topics.splice(index, 1);
-                renderTopics();
-              }
-            });
-          }
-          topicsContainer.appendChild(div);
-        });
+    postTopicBtn.addEventListener("click", () => {
+      const content = newTopicInput.value.trim();
+      if (content) {
+        topics.unshift({ author: displayName, content, comments: [] });
+        newTopicInput.value = "";
+        renderTopics();
       }
     });
-  </script>
+  });
+</script>
 </body>
 </html>
