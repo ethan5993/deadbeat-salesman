@@ -37,13 +37,12 @@
     const db = firebase.firestore();
 
     const displayName = localStorage.getItem("displayName");
+    const isMaster = localStorage.getItem("isMaster") === "true";
+
     if (!displayName) {
       window.location.href = "index.html";
     }
 
-    const isMaster = localStorage.getItem("isMaster") === "true";
-
-    // Online users
     const onlineUsersRef = db.collection("onlineUsers");
     const userDocRef = onlineUsersRef.doc(displayName);
 
