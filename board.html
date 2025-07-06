@@ -5,21 +5,17 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Deadbeat Salesman</title>
   <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
-
-  <!-- Firebase SDKs -->
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 </head>
 <body class="bg-gray-100 p-4">
   <h1 class="text-3xl font-bold mb-2">Deadbeats:</h1>
-  <p id="onlineUsers" class="text-sm italic text-gray-600 mb-1"></p>
   <p id="greeting" class="mb-6 text-lg text-gray-700"></p>
-
   <div class="mb-6">
     <textarea id="newTopic" placeholder="Start a new topic..." class="w-full p-3 border rounded mb-2"></textarea>
     <button id="postTopicBtn" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded">Post Topic</button>
   </div>
-
   <div id="topics" class="space-y-4"></div>
 
   <script>
@@ -32,52 +28,19 @@
       appId: "1:138313873617:web:53cd258bcd7bacfad7adf0",
       measurementId: "G-MGZBH2KRBZ"
     };
-
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
 
-    const displayName = localStorage.getItem("displayName");
-    const isMaster = localStorage.getItem("isMaster") === "true";
+    firebase.auth().onAuthStateChanged(user => {
+      if (!user) {
+        window.location.href = "index.html";
+        return;
+      }
 
-    if (!displayName) {
-      window.location.href = "index.html";
-    }
+      const displayName = localStorage.getItem("displayName") || "Anonymous";
+      const isMaster = localStorage.getItem("isMaster") === "true";
 
-    const onlineUsersRef = db.collection("onlineUsers");
-    const userDocRef = onlineUsersRef.doc(displayName);
-
-    function updateLastSeen() {
-      userDocRef.set({
-        name: displayName,
-        lastSeen: firebase.firestore.FieldValue.serverTimestamp()
-      });
-    }
-
-    updateLastSeen();
-    setInterval(updateLastSeen, 30000);
-
-    window.addEventListener("beforeunload", async () => {
-      await userDocRef.delete();
-    });
-
-    function renderOnlineUsers() {
-      const cutoff = firebase.firestore.Timestamp.fromDate(
-        new Date(Date.now() - 2 * 60 * 1000)
-      );
-      onlineUsersRef.where("lastSeen", ">", cutoff).onSnapshot(snapshot => {
-        const names = snapshot.docs
-          .map(doc => doc.data().name)
-          .filter(name => name !== displayName);
-        const onlineText = names.length
-          ? `${names.join(", ")}`
-          : `No one else is online right now.`;
-        document.getElementById("onlineUsers").textContent = onlineText;
-      });
-    }
-
-    document.addEventListener("DOMContentLoaded", () => {
       document.getElementById("greeting").innerHTML = `Posting as: <strong>${displayName}</strong>`;
-      renderOnlineUsers();
 
       const topicsRef = db.collection("topics");
       const newTopicInput = document.getElementById("newTopic");
@@ -102,7 +65,6 @@
           const data = doc.data();
           const topicDiv = document.createElement("div");
           topicDiv.className = "bg-white p-4 rounded shadow mb-4";
-
           const commentInputId = `comment-${doc.id}`;
 
           topicDiv.innerHTML = `
@@ -122,13 +84,13 @@
           const deleteTopicBtn = topicDiv.querySelector(".delete-topic-btn");
           if (deleteTopicBtn) {
             deleteTopicBtn.addEventListener("click", async () => {
-              await db.collection("topics").doc(deleteTopicBtn.dataset.id).delete();
+              await topicsRef.doc(deleteTopicBtn.dataset.id).delete();
             });
           }
 
           const commentInput = document.getElementById(commentInputId);
           const commentBtn = topicDiv.querySelector(".comment-btn");
-          const commentsRef = db.collection("topics").doc(doc.id).collection("comments");
+          const commentsRef = topicsRef.doc(doc.id).collection("comments");
           const commentList = topicDiv.querySelector(`#comments-${doc.id}`);
 
           commentBtn.addEventListener("click", async () => {
@@ -149,15 +111,12 @@
               const comment = commentDoc.data();
               const commentDiv = document.createElement("div");
               commentDiv.className = "text-sm text-gray-700 flex justify-between items-center";
-              commentDiv.innerHTML = `
-                <span><strong>${comment.author}:</strong> ${comment.content}</span>
-              `;
+              commentDiv.innerHTML = `<span><strong>${comment.author}:</strong> ${comment.content}</span>`;
 
               if (comment.author === displayName || isMaster) {
                 const deleteBtn = document.createElement("button");
                 deleteBtn.textContent = "Delete";
                 deleteBtn.className = "text-red-500 text-sm ml-2";
-                deleteBtn.setAttribute("data-id", commentDoc.id);
                 deleteBtn.addEventListener("click", async () => {
                   await commentsRef.doc(commentDoc.id).delete();
                 });
