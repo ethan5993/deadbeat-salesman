@@ -51,6 +51,7 @@
       isMaster = true;
     }
 
+    // Online users
     const onlineUsersRef = db.collection("onlineUsers");
     const userDocRef = onlineUsersRef.doc(displayName);
 
@@ -69,7 +70,9 @@
     });
 
     function renderOnlineUsers() {
-      const cutoff = new Date(Date.now() - 2 * 60 * 1000); // last 2 min
+      const cutoff = firebase.firestore.Timestamp.fromDate(
+        new Date(Date.now() - 2 * 60 * 1000)
+      );
       onlineUsersRef.where("lastSeen", ">", cutoff).onSnapshot(snapshot => {
         const names = snapshot.docs
           .map(doc => doc.data().name)
@@ -113,7 +116,7 @@
 
           topicDiv.innerHTML = `
             <div class="flex justify-between">
-              <p class="text-xl"><strong>${data.author} //&gt;</strong> ${data.content}</p>
+              <p class="text-xl"><strong>${data.author}:</strong> ${data.content}</p>
               ${(data.author === displayName || isMaster) ? `<button class="text-red-500 text-sm delete-topic-btn" data-id="${doc.id}">Delete</button>` : ""}
             </div>
             <div class="mt-4 space-y-2" id="comments-${doc.id}"></div>
@@ -158,7 +161,7 @@
               const commentDiv = document.createElement("div");
               commentDiv.className = "text-sm text-gray-700 flex justify-between items-center";
               commentDiv.innerHTML = `
-                <span><strong>${comment.author} //&gt;</strong> ${comment.content}</span>
+                <span><strong>${comment.author}:</strong> ${comment.content}</span>
               `;
 
               if (comment.author === displayName || isMaster) {
