@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Friends Board v.5</title>
+  <title>Friends Board v6</title>
   <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
 
   <!-- Firebase SDKs -->
@@ -22,7 +22,7 @@
   <div id="topics" class="space-y-4"></div>
 
   <script>
-    // Initialize Firebase
+    // Firebase config
     const firebaseConfig = {
       apiKey: "AIzaSyD6bzW62IXEUd441ZhwDgLoMGfSXZ33OKc",
       authDomain: "deadbeat-salesman.firebaseapp.com",
@@ -47,20 +47,22 @@
     const postTopicBtn = document.getElementById("postTopicBtn");
     const topicsContainer = document.getElementById("topics");
 
-    // Post a new topic
     postTopicBtn.addEventListener("click", async () => {
       const content = newTopicInput.value.trim();
       if (content) {
-        await topicsRef.add({
-          author: displayName,
-          content,
-          timestamp: firebase.firestore.FieldValue.serverTimestamp()
-        });
-        newTopicInput.value = "";
+        try {
+          await topicsRef.add({
+            author: displayName,
+            content,
+            timestamp: firebase.firestore.FieldValue.serverTimestamp()
+          });
+          newTopicInput.value = "";
+        } catch (e) {
+          console.error("Error posting topic:", e);
+        }
       }
     });
 
-    // Listen for topics
     topicsRef.orderBy("timestamp", "desc").onSnapshot(snapshot => {
       topicsContainer.innerHTML = "";
       snapshot.forEach(doc => {
@@ -72,7 +74,7 @@
         topicDiv.innerHTML = `
           <div class="flex justify-between">
             <p><strong>${data.author}:</strong> ${data.content}</p>
-            ${data.author === displayName ? `<button class="text-red-500 text-sm delete-topic" data-id="${topicId}">Delete</button>` : ""}
+            ${data.author === displayName ? `<button class="text-red-500 text-sm delete-topic" data-id="${topicId}" data-author="${data.author}">Delete</button>` : ""}
           </div>
           <div class="mt-2">
             <textarea class="comment-input w-full p-2 border rounded mb-2" placeholder="Add a comment..."></textarea>
@@ -82,53 +84,63 @@
         `;
         topicsContainer.appendChild(topicDiv);
 
-        // Post comment
         const commentBtn = topicDiv.querySelector(".post-comment-btn");
         commentBtn.addEventListener("click", async () => {
           const input = topicDiv.querySelector(".comment-input");
           const comment = input.value.trim();
           if (comment) {
-            await topicsRef.doc(topicId).collection("comments").add({
-              author: displayName,
-              content: comment,
-              timestamp: firebase.firestore.FieldValue.serverTimestamp()
-            });
-            input.value = "";
+            try {
+              await topicsRef.doc(topicId).collection("comments").add({
+                author: displayName,
+                content: comment,
+                timestamp: firebase.firestore.FieldValue.serverTimestamp()
+              });
+              input.value = "";
+            } catch (e) {
+              console.error("Error posting comment:", e);
+            }
           }
         });
 
-        // Delete topic
         const deleteBtn = topicDiv.querySelector(".delete-topic");
         if (deleteBtn) {
           deleteBtn.addEventListener("click", async () => {
             if (confirm("Delete this topic?")) {
-              await topicsRef.doc(topicId).delete();
+              try {
+                await topicsRef.doc(topicId).delete();
+              } catch (e) {
+                console.error("Error deleting topic:", e);
+              }
             }
           });
         }
 
-        // Listen for comments
         const commentsContainer = topicDiv.querySelector(".comments");
         topicsRef.doc(topicId).collection("comments").orderBy("timestamp").onSnapshot(commentSnap => {
           commentsContainer.innerHTML = "";
           commentSnap.forEach(commentDoc => {
             const comment = commentDoc.data();
+            const commentId = commentDoc.id;
+
             const commentDiv = document.createElement("div");
             commentDiv.className = "bg-gray-100 p-2 rounded";
             commentDiv.innerHTML = `
               <div class="flex justify-between">
                 <p><strong>${comment.author}:</strong> ${comment.content}</p>
-                ${comment.author === displayName ? `<button class="text-red-400 text-xs delete-comment" data-topic="${topicId}" data-id="${commentDoc.id}">Delete</button>` : ""}
+                ${comment.author === displayName ? `<button class="text-red-400 text-xs delete-comment" data-id="${commentId}" data-topic="${topicId}" data-author="${comment.author}">Delete</button>` : ""}
               </div>
             `;
             commentsContainer.appendChild(commentDiv);
 
-            // Delete comment
             const deleteCommentBtn = commentDiv.querySelector(".delete-comment");
             if (deleteCommentBtn) {
               deleteCommentBtn.addEventListener("click", async () => {
                 if (confirm("Delete this comment?")) {
-                  await topicsRef.doc(topicId).collection("comments").doc(deleteCommentBtn.dataset.id).delete();
+                  try {
+                    await topicsRef.doc(topicId).collection("comments").doc(commentId).delete();
+                  } catch (e) {
+                    console.error("Error deleting comment:", e);
+                  }
                 }
               });
             }
