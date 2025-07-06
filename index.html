@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+a<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
@@ -52,7 +52,7 @@
           try {
             const userCredential = await firebase.auth().signInWithEmailAndPassword(email, password);
             localStorage.setItem('displayName', name);
-            localStorage.setItem('isMaster', email === 'admin@deadbeatsalesman.com' ? 'true' : 'false');
+            localStorage.setItem('isMaster', email === 'ethan.g.taylor93@gmail.com' ? 'true' : 'false');
             window.location.href = 'board.html';
           } catch (error) {
             loginError.classList.remove('hidden');
