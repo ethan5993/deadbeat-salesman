@@ -12,6 +12,7 @@
 </head>
 <body class="bg-gray-100 p-4">
   <h1 class="text-3xl font-bold mb-2">Deadbeats:</h1>
+  <p id="onlineUsers" class="text-sm italic text-gray-600 mb-1"></p>
   <p id="greeting" class="mb-6 text-lg text-gray-700"></p>
 
   <div class="mb-6">
@@ -50,8 +51,39 @@
       isMaster = true;
     }
 
+    const onlineUsersRef = db.collection("onlineUsers");
+    const userDocRef = onlineUsersRef.doc(displayName);
+
+    function updateLastSeen() {
+      userDocRef.set({
+        name: displayName,
+        lastSeen: firebase.firestore.FieldValue.serverTimestamp()
+      });
+    }
+
+    updateLastSeen();
+    setInterval(updateLastSeen, 30000);
+
+    window.addEventListener("beforeunload", async () => {
+      await userDocRef.delete();
+    });
+
+    function renderOnlineUsers() {
+      const cutoff = new Date(Date.now() - 2 * 60 * 1000); // last 2 min
+      onlineUsersRef.where("lastSeen", ">", cutoff).onSnapshot(snapshot => {
+        const names = snapshot.docs
+          .map(doc => doc.data().name)
+          .filter(name => name !== displayName);
+        const onlineText = names.length
+          ? `Also online: ${names.join(", ")}`
+          : `No one else is online right now.`;
+        document.getElementById("onlineUsers").textContent = onlineText;
+      });
+    }
+
     document.addEventListener("DOMContentLoaded", () => {
       document.getElementById("greeting").innerHTML = `Posting as: <strong>${displayName}</strong>`;
+      renderOnlineUsers();
 
       const topicsRef = db.collection("topics");
       const newTopicInput = document.getElementById("newTopic");
