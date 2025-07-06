@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Sign Up</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+
+  <!-- Firebase SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyD6bzW62IXEUd441ZhwDgLoMGfSXZ33OKc",
+      authDomain: "deadbeat-salesman.firebaseapp.com",
+      projectId: "deadbeat-salesman",
+      storageBucket: "deadbeat-salesman.appspot.com",
+      messagingSenderId: "138313873617",
+      appId: "1:138313873617:web:53cd258bcd7bacfad7adf0",
+      measurementId: "G-MGZBH2KRBZ"
+    };
+    firebase.initializeApp(firebaseConfig);
+  </script>
+</head>
+<body class="bg-gray-100 flex items-center justify-center h-screen">
+  <div class="bg-white p-6 rounded shadow-md w-full max-w-sm">
+    <h2 class="text-xl font-bold mb-4">Sign Up</h2>
+    <input type="email" id="email" placeholder="Email" class="w-full mb-2 p-2 border rounded">
+    <input type="password" id="password" placeholder="Password" class="w-full mb-2 p-2 border rounded">
+    <input type="text" id="displayName" placeholder="Choose a name" class="w-full mb-4 p-2 border rounded">
+    <button id="signupBtn" class="bg-green-500 text-white px-4 py-2 rounded w-full">Create Account</button>
+    <p id="signupError" class="text-red-500 mt-2 hidden">Sign up failed. Please try again.</p>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const signupBtn = document.getElementById('signupBtn');
+      const emailInput = document.getElementById('email');
+      const passwordInput = document.getElementById('password');
+      const nameInput = document.getElementById('displayName');
+      const signupError = document.getElementById('signupError');
+
+      signupBtn.addEventListener('click', async () => {
+        const email = emailInput.value.trim();
+        const password = passwordInput.value;
+        const name = nameInput.value.trim();
+
+        if (email && password && name) {
+          try {
+            await firebase.auth().createUserWithEmailAndPassword(email, password);
+            localStorage.setItem('displayName', name);
+            localStorage.setItem('isMaster', email === 'admin@deadbeatsalesman.com' ? 'true' : 'false');
+            window.location.href = 'board.html';
+          } catch (error) {
+            signupError.classList.remove('hidden');
+          }
+        } else {
+          signupError.classList.remove('hidden');
+        }
+      });
+    });
+  </script>
+</body>
+</html>
