@@ -51,7 +51,7 @@
     }
 
     document.addEventListener("DOMContentLoaded", () => {
-      document.getElementById("greeting").textContent = `Posting as: ${displayName}`;
+      document.getElementById("greeting").innerHTML = `Posting as: <strong>${displayName}</strong>`;
 
       const topicsRef = db.collection("topics");
       const newTopicInput = document.getElementById("newTopic");
