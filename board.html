@@ -72,7 +72,7 @@
 
           topicDiv.innerHTML = `
             <div class="flex justify-between">
-              <p><strong>${data.author}:</strong> ${data.content}</p>
+              <p class="text-xl"><strong>${data.author}:</strong> ${data.content}</p>
               ${data.author === displayName ? `<button class="text-red-500 text-sm delete-topic-btn" data-id="${doc.id}">Delete</button>` : ""}
             </div>
             <div class="mt-4 space-y-2" id="comments-${doc.id}"></div>
