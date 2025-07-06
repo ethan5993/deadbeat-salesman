@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Friends Board v10</title>
+  <title>Friends Board v.11</title>
   <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
 
   <!-- Firebase SDKs -->
@@ -36,9 +36,18 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
 
+    // Login info
     const displayName = localStorage.getItem("displayName");
     if (!displayName) {
       window.location.href = "index.html";
+    }
+
+    // Master password logic
+    const masterPassword = "superdelete";
+    let isMaster = false;
+    const masterTry = prompt("Enter master password (leave blank if you're not admin):");
+    if (masterTry === masterPassword) {
+      isMaster = true;
     }
 
     document.addEventListener("DOMContentLoaded", () => {
@@ -73,7 +82,7 @@
           topicDiv.innerHTML = `
             <div class="flex justify-between">
               <p class="text-xl"><strong>${data.author}:</strong> ${data.content}</p>
-              ${data.author === displayName ? `<button class="text-red-500 text-sm delete-topic-btn" data-id="${doc.id}">Delete</button>` : ""}
+              ${(data.author === displayName || isMaster) ? `<button class="text-red-500 text-sm delete-topic-btn" data-id="${doc.id}">Delete</button>` : ""}
             </div>
             <div class="mt-4 space-y-2" id="comments-${doc.id}"></div>
             <div class="mt-2 flex">
@@ -92,7 +101,7 @@
             });
           }
 
-          // Comment functionality
+          // Comment logic
           const commentInput = document.getElementById(commentInputId);
           const commentBtn = topicDiv.querySelector(".comment-btn");
           const commentsRef = db.collection("topics").doc(doc.id).collection("comments");
@@ -118,17 +127,20 @@
               commentDiv.className = "text-sm text-gray-700 flex justify-between items-center";
               commentDiv.innerHTML = `
                 <span><strong>${comment.author}:</strong> ${comment.content}</span>
-                ${comment.author === displayName ? `<button class="text-red-500 delete-comment-btn" data-id="${commentDoc.id}">Delete</button>` : ""}
               `;
-              commentList.appendChild(commentDiv);
 
-              // Delete comment
-              const deleteCommentBtn = commentDiv.querySelector(".delete-comment-btn");
-              if (deleteCommentBtn) {
-                deleteCommentBtn.addEventListener("click", async () => {
-                  await db.collection("topics").doc(doc.id).collection("comments").doc(deleteCommentBtn.dataset.id).delete();
+              if (comment.author === displayName || isMaster) {
+                const deleteBtn = document.createElement("button");
+                deleteBtn.textContent = "Delete";
+                deleteBtn.className = "text-red-500 text-sm ml-2";
+                deleteBtn.setAttribute("data-id", commentDoc.id);
+                deleteBtn.addEventListener("click", async () => {
+                  await commentsRef.doc(commentDoc.id).delete();
                 });
+                commentDiv.appendChild(deleteBtn);
               }
+
+              commentList.appendChild(commentDiv);
             });
           });
         });
